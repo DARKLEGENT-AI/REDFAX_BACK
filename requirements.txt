@@ -5,5 +5,4 @@ passlib[bcrypt]
 pycryptodome
 pydantic
 motor
-bson
 uvicorn

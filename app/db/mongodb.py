@@ -1,6 +1,11 @@
 from datetime import datetime
 from pydantic import BaseModel
+import os
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
+try:
+    from mongomock_motor import AsyncMongoMockClient
+except Exception:
+    AsyncMongoMockClient = None
 from app.schemas import *
 from bson import ObjectId
 import secrets
@@ -8,11 +13,25 @@ from fastapi import FastAPI, Depends, HTTPException, Query
 from app.utils.crypto import *
 
 MONGO_URI = "mongodb://root:example@localhost:27017"
-client = AsyncIOMotorClient(MONGO_URI)
-db = client["messenger"]
-fs_bucket = AsyncIOMotorGridFSBucket(db)
-voice_fs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="voice_fs")
-avatar_fs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="avatars")
+if os.getenv("TESTING") and AsyncMongoMockClient:
+    client = AsyncMongoMockClient()
+    db = client["messenger"]
+
+    class DummyBucket:
+        async def upload_from_stream(self, *a, **kw):
+            raise NotImplementedError
+        async def open_download_stream(self, *a, **kw):
+            raise NotImplementedError
+        async def delete(self, *a, **kw):
+            raise NotImplementedError
+
+    fs_bucket = voice_fs_bucket = avatar_fs_bucket = DummyBucket()
+else:
+    client = AsyncIOMotorClient(MONGO_URI)
+    db = client["messenger"]
+    fs_bucket = AsyncIOMotorGridFSBucket(db)
+    voice_fs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="voice_fs")
+    avatar_fs_bucket = AsyncIOMotorGridFSBucket(db, bucket_name="avatars")
 
 # users: коллекция пользователей
 users_collection = db.users

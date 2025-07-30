@@ -109,3 +109,11 @@
    - ├── crypto.py            # AES‑шифрование/дешифровка
    - ├── docker-compose.yml   # MongoDB сервис
    - └── site/                # Фронтенд (React/Vue/Angular + Vite)
+## Тестирование
+1. Установить dev-зависимости:
+   - `pip install httpx pytest-asyncio mongomock_motor`
+2. Запустить тесты:
+   - `TESTING=1 pytest -q`
+3. Если появляется ошибка `No module named \`bson.tz_util\``, выполните `pip uninstall -y bson`.
+
+

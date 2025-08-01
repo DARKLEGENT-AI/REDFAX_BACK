@@ -6,6 +6,12 @@ import secrets
 from fastapi import HTTPException
 from app.utils.crypto import *
 from app.options import *
+from fastapi import Depends, HTTPException, WebSocket, WebSocketException
+from jose import jwt, JWTError
+from datetime import datetime
+from starlette.status import WS_1008_POLICY_VIOLATION
+from app.options import SECRET_KEY, ALGORITHM
+from fastapi.security import OAuth2PasswordBearer
 
 client = AsyncIOMotorClient(MONGO_URI)
 db = client["messenger"]
@@ -94,6 +100,7 @@ async def create_task(username: str, task_data: TaskCreate):
     doc = {
         "username": username,
         "title": task_data.title,
+        "description": task_data.description,
         "date": str(task_data.date)  # или task_data.date.isoformat()
     }
     result = await tasks_collection.insert_one(doc)
@@ -106,6 +113,7 @@ async def get_tasks_by_user(username: str):
         tasks.append({
             "id": str(doc["_id"]),
             "title": doc["title"],
+            "description": doc["description"],
             "date": doc["date"]
         })
     return tasks
@@ -204,3 +212,35 @@ async def get_user_id(user: dict) -> str:
     if raw is None:
         raise HTTPException(400, detail="Невозможно определить user_id")
     return str(raw)
+
+async def get_current_user():
+    oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
+    token: str = Depends(oauth2_scheme)
+    cred_exc = HTTPException(401, "Invalid credentials")
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if not username:
+            raise cred_exc
+    except JWTError:
+        raise cred_exc
+    user = await get_user(username)
+    if not user:
+        raise cred_exc
+    return user
+
+async def get_current_user_ws(ws: WebSocket):
+    token = ws.query_params.get("token")
+    if not token:
+        raise WebSocketException(code=WS_1008_POLICY_VIOLATION)
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if not username:
+            raise WebSocketException(code=WS_1008_POLICY_VIOLATION)
+    except JWTError:
+        raise WebSocketException(code=WS_1008_POLICY_VIOLATION)
+    user = await get_user(username)
+    if not user:
+        raise WebSocketException(code=WS_1008_POLICY_VIOLATION)
+    return user

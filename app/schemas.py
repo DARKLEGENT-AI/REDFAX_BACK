@@ -55,10 +55,12 @@ class UserProfileUpdate(UserProfile):
 
 class TaskCreate(BaseModel):
     title: str
+    description: Optional[str] = None
     date: date  # формат YYYY-MM-DD
 
 class TaskOut(TaskCreate):
     id: str
+    description: Optional[str] = None
 
 class GroupCreate(BaseModel):
     name: str

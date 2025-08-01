@@ -1,6 +1,9 @@
 from Crypto.Cipher import AES
 import base64
 from passlib.context import CryptContext
+from jose import jwt
+from datetime import timedelta, datetime
+from app.options import SECRET_KEY, ALGORITHM
 
 KEY = b"1234567890abcdef"  # 16 байт
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -23,3 +26,9 @@ def get_password_hash(password):
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
+
+def create_access_token(data: dict, expires: timedelta | None = None) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + (expires or timedelta(minutes=15))
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)

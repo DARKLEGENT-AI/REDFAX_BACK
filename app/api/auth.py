@@ -6,16 +6,10 @@ from starlette.status import WS_1008_POLICY_VIOLATION
 from app.db.mongodb import get_user, create_user
 from app.schemas import UserCreate, UserLogin
 from app.options import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES
-from app.utils.crypto import get_password_hash, verify_password
+from app.utils.crypto import create_access_token, verify_password, get_password_hash
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-def create_access_token(data: dict, expires: timedelta | None = None) -> str:
-    to_encode = data.copy()
-    expire = datetime.utcnow() + (expires or timedelta(minutes=15))
-    to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 @router.post("/register")
 async def register(user: UserCreate):

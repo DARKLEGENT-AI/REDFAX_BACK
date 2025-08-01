@@ -1,14 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List
-from app.schemas import (
-    GroupCreate, JoinGroupRequest,
-    GroupInfo, GroupMessageCreate, GroupMessageOut)
+from app.schemas import GroupCreate, JoinGroupRequest, GroupInfo
 from app.api.auth import get_current_user
 from app.db.mongodb import (
     create_group, add_user_to_group,
     get_groups_for_user, get_group_by_id)
 from app.utils.crypto import *
-from app.websockets.manager import manager
 from app.schemas import *
 from app.api.auth import *
 from bson import ObjectId

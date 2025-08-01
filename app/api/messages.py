@@ -57,6 +57,57 @@ async def send_message(
 
     return JSONResponse({"message": "Сообщение отправлено"}, status_code=201)
 
+@router.post("/send/voice")
+async def send_voice_message(
+    receiver: str = Form(None),
+    group_id: str = Form(None),
+    audio_file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    # … ваши валидации и загрузка в GridFS …
+    contents = await audio_file.read()
+    file_id = await voice_fs_bucket.upload_from_stream(
+        audio_file.filename, contents,
+        metadata={"user_id": current_user["username"], "type": "voice"}
+    )
+    audio_file_id = str(file_id)
+
+    if receiver:
+        # личка
+        await create_message(
+            sender=current_user["username"],
+            receiver=receiver,
+            content=None,
+            audio_file_id=audio_file_id
+        )
+        message_data = {
+            "sender": current_user["username"],
+            "receiver": receiver,
+            "audio_url": f"/voice/{audio_file_id}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        payload_ws = {"type": "new_voice_message", "data": message_data}
+        await push_personal_message(receiver, payload_ws)
+        return JSONResponse({"message": "Голосовое сообщение отправлено"}, status_code=201)
+
+    # группа
+    group = await get_group_by_id(group_id)
+    await db.group_messages.insert_one({
+        "group_id": group_id,
+        "sender": current_user["username"],
+        "audio_file_id": audio_file_id,
+        "timestamp": datetime.utcnow()
+    })
+    message_data = {
+        "sender": current_user["username"],
+        "group_id": group_id,
+        "audio_url": f"/voice/{audio_file_id}",
+        "timestamp": datetime.utcnow().isoformat()
+    }
+    payload_ws = {"type": "new_group_voice_message", "data": message_data}
+    await push_group_message(group["members"], current_user["username"], payload_ws)
+    return JSONResponse({"message": "Голосовое сообщение отправлено в группу"}, status_code=201)
+
 @router.get("/", response_model=List[MessageOut])
 async def get_messages(current_user: dict = Depends(get_current_user)):
     raw_msgs = await get_messages_for_user(current_user["username"])

@@ -18,6 +18,11 @@ async def push_personal_message(to_user: str, payload: dict):
     if ws:
         await ws.send_text(json.dumps(payload))
 
+async def push_group_message(group_members: List[str], from_user: str, payload: dict):
+    for member in group_members:
+        if member != from_user and member in active_connections_ws:
+            await active_connections_ws[member].send_text(json.dumps(payload))
+
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     try:

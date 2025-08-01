@@ -3,7 +3,7 @@ version: '3.8'
 services:
   mongodb:
     image: mongo:7.0
-    container_name: REDFAX_2.0_DB
+    container_name: REDFAX_DB
     restart: always
     ports:
       - "27017:27017"

@@ -1,6 +1,4 @@
 from fastapi import APIRouter, Depends, HTTPException
-from typing import List
-
 from app.schemas import FriendAddRequest, FriendListResponse, FriendInfo
 from app.api.auth import get_current_user
 from app.db.mongodb import get_user, add_friend_db, get_friends

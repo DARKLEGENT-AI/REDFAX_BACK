@@ -21,4 +21,5 @@ class ConnectionManager:
             if u in self.active:
                 await self.active[u].send_json(data)
 
+
 manager = ConnectionManager()

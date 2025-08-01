@@ -1,5 +1,5 @@
 # Настройка MongoDB
-MONGO_URI = "mongodb://root:example@mongo:27017"
+MONGO_URI = "mongodb://root:example@localhost:27017"
 DB_NAME   = "messenger"
 
 # Настройка ключей JWT

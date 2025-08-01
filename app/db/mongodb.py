@@ -1,13 +1,12 @@
 from datetime import datetime
-from pydantic import BaseModel
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorGridFSBucket
 from app.schemas import *
 from bson import ObjectId
 import secrets
-from fastapi import FastAPI, Depends, HTTPException, Query
+from fastapi import HTTPException
 from app.utils.crypto import *
+from app.options import *
 
-MONGO_URI = "mongodb://root:example@localhost:27017"
 client = AsyncIOMotorClient(MONGO_URI)
 db = client["messenger"]
 fs_bucket = AsyncIOMotorGridFSBucket(db)
@@ -200,3 +199,8 @@ async def get_group_messages(group_id: str):
 async def count_user_files(user_id: str) -> int:
     return await db.fs.files.count_documents({"metadata.user_id": user_id})
 
+async def get_user_id(user: dict) -> str:
+    raw = user.get("id") or user.get("_id")
+    if raw is None:
+        raise HTTPException(400, detail="Невозможно определить user_id")
+    return str(raw)

@@ -1,23 +1,59 @@
-from fastapi import APIRouter, WebSocket, WebSocketException, Depends
+from fastapi import APIRouter, WebSocket, WebSocketException
 from app.api.auth import *
 from app.utils.crypto import *
 from app.websockets.manager import *
+from typing import Dict
+from app.schemas import *
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+import json
 
 router = APIRouter()
 
+### WEBRTC ЗВОНКИ ###
+
+active_connections_ws: Dict[str, WebSocket] = {}
+
+async def push_personal_message(to_user: str, payload: dict):
+    ws = active_connections_ws.get(to_user)
+    if ws:
+        await ws.send_text(json.dumps(payload))
+
 @router.websocket("/ws")
-async def ws_endpoint(ws: WebSocket):
-    user = await get_current_user_ws(ws)
-    uname = user["username"]
-    await manager.connect(uname, ws)
+async def websocket_endpoint(websocket: WebSocket):
+    try:
+        current_user = await get_current_user_ws(websocket)
+    except WebSocketException:
+        return
+
+    username = current_user["username"]
+    await websocket.accept()
+    active_connections_ws[username] = websocket
+    print(f"🔗 {username} подключился")
+
     try:
         while True:
-            msg = await ws.receive_json()
-            to = msg.get("to")
-            data = msg.get("data")
-            if to and data:
-                await manager.send_personal(to, {"from": uname, "data": data})
-    except WebSocketException:
-        pass
+            try:
+                raw = await websocket.receive_text()
+                msg = json.loads(raw)
+                to_user = msg.get("to")
+                payload = msg.get("data")
+
+                if not to_user or not payload:
+                    print(f"⚠️ Пустой to или data от {username}: {msg}")
+                    continue
+
+                if to_user in active_connections_ws:
+                    print(f"➡️ Пересылка от {username} к {to_user}")
+                    await active_connections_ws[to_user].send_text(json.dumps({
+                        "from": username,
+                        "data": payload
+                    }))
+                else:
+                    print(f"❌ {to_user} не в сети")
+            except Exception as e:
+                print(f"💥 Ошибка при обработке сообщения от {username}: {e}")
+                break  # выходим из while
+    except WebSocketDisconnect:
+        print(f"🔌 {username} отключился")
     finally:
-        manager.disconnect(uname)
+        active_connections_ws.pop(username, None)

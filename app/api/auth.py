@@ -3,7 +3,6 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from datetime import timedelta, datetime
 from starlette.status import WS_1008_POLICY_VIOLATION
-
 from app.db.mongodb import get_user, create_user
 from app.schemas import UserCreate, UserLogin
 from app.options import SECRET_KEY, ALGORITHM, ACCESS_TOKEN_EXPIRE_MINUTES

@@ -95,7 +95,7 @@
    - docker compose -f docker-compose.yml up -d --build mongodb
 
 # 4. Запустить API-сервер
-   - uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+   - uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
    - Примечание: Если у вас нет внешнего IP, можно воспользоваться обратным пробросом портов.
    - Для этого запустите скрипт lt-loop-15min.bat.
    

@@ -27,9 +27,11 @@ class FriendListResponse(BaseModel):
     friends: List[FriendInfo]
 
 class FileMeta(BaseModel):
+    id: str
     filename: str
     content_type: str
-    uploaded_at: int  # timestamp
+    size: int
+    uploaded_at: datetime
 
 class FileCreate(BaseModel):
     filename: str
